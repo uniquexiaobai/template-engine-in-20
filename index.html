@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>template-engine-in-20</title>
+</head>
+<body>
+	<div id="preview"></div>
+
+	<script>
+		function TemplateEngine(template, data) {
+			var pattern = /<%([^%>]+)?%>/g;
+			var pattern1 = /(^( )?(if|for|else|switch|case|break|{|}))(.*)?/g;
+			var code = 'var r=[];\n';
+			var cursor = 0;
+			var match;
+			var add = function (line, isCode) {
+				if (isCode) {
+					code += line.match(pattern1) ? line + '\n' : 'r.push(' + line + ');\n';
+				} else {
+					code += line != '' ? 'r.push("' + line.replace(/"/g, '\\"') + '");\n' : '';
+				}
+				return add;
+			}
+
+			while(match = pattern.exec(template)) {
+				add(template.slice(cursor, match.index))(match[1], true);
+				cursor = match.index + match[0].length;
+			}
+			add(template.substr(cursor, template.length - cursor));
+			code += 'return r.join("");';
+			console.log('code###', code);
+			console.log('data###', data);
+			return new Function(code.replace(/[\r\t\n]/g, '')).call(data);
+		}
+
+		var tpl = "<p>Hello, my name is <% this.name %>. I\'m <% this.profile.age %> years old.</p>" +
+			"<% if(this.showSkills) { %>" + 
+				"My skills:" +
+				"<ul>" +
+					"<% for(var index in this.skills) { %>" + 
+						"<li><a href='#'><% this.skills[index] %></a></li>" + 
+					"<% } %>" +
+				"</ul>" +
+			"<% } else { %>" + 
+				"<p>no skills</p>" +
+			"<% } %>";
+
+		var data = {
+			name: 'xiaobai',
+			profile: { age: 11 },
+			showSkills: true,
+			skills: ["js", "html", "css"]
+		};
+
+		console.log('template###', tpl);
+		document.getElementById('preview').innerHTML = TemplateEngine(tpl, data);
+	</script>
+</body>
+</html>
